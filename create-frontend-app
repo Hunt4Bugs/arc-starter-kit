@@ -1,0 +1,128 @@
+#!/bin/bash
+
+npx create-react-app $1
+echo "Created react app"
+cd $1
+
+echo "Installing packages..."
+
+npm install --save react-router react-router-dom
+npm install -D tailwindcss@npm:@tailwindcss/postcss7-compat postcss@^7 autoprefixer@^9
+npm install @craco/craco react-hot-loader zustand lodash
+
+echo "Done installing packages"
+echo "Creating tailwind project"
+sed -i '' "s/\"react-scripts start/\"craco start/" package.json
+sed -i '' "s/\"react-scripts build/\"craco build/" package.json
+sed -i '' "s/\"react-scripts test/\"craco test/" package.json
+craco_config=\
+"// craco.config.js\n"\
+"module.exports = {\n"\
+"  style: {\n"\
+"    postcss: {\n"\
+"      plugins: [\n"\
+"        require('tailwindcss'),\n"\
+"        require('autoprefixer'),\n"\
+"      ],\n"\
+"    },\n"\
+"  },\n"\
+"}"
+touch craco.config.js
+echo -e "$craco_config" >> craco.config.js
+
+jsconfig=\
+"{\n"\
+"   \"compilerOptions\": {\n"\
+"      \"baseUrl\": \"src\",\n"\
+"      \"paths\": {}\n"\
+"   },\n"\
+"   \"include\": [\n"\
+"      \"src\"\n"\
+"   ]\n"\
+"}"
+
+echo -e "$jsconfig" >> jsconfig.json
+
+npx tailwindcss-cli@latest init
+
+rm src/App.test.js src/App.js src/app.css src/index.js src/logo.svg
+
+mkdir src/components
+mkdir src/components/pages
+mkdir src/components/pages/HomePage
+touch src/index.js src/components/index.js src/components/App.js src/components/pages/HomePage/index.js
+css_index="@tailwind base;\n@tailwind components;\n@tailwind utilities;"
+echo -e "$css_index\n$(cat src/index.css)" > src/index.css
+root_index=\
+"import React from 'react';\n"\
+"import ReactDOM, { render } from 'react-dom'\n"\
+"import 'index.css'\n"\
+"import { BrowserRouter } from 'react-router-dom'\n\n"\
+"import {basename} from 'config'\n"\
+"import App from 'components/App';\n\n"\
+"const renderApp = () => (\n"\
+"    <BrowserRouter basename={basename}>\n"\
+"            <App />\n"\
+"    </BrowserRouter>\n"\
+")\n\n"\
+"const root = document.getElementById('root')\n"\
+"ReactDOM.render(renderApp(), root);\n\n"\
+"if (module.hot) {\n"\
+"    module.hot.accept('components/App', () => {\n"\
+"      require('components/App')\n"\
+"      render(renderApp(), root)\n"\
+"    })\n"\
+"}\n"
+
+echo -e "$root_index" >> src/index.js
+
+config_index=\
+"const merge = require('lodash/merge')\n\n"\
+"const config = {\n"\
+"  all: {\n"\
+"    env: process.env.NODE_ENV || 'development',\n"\
+"    isDev: process.env.NODE_ENV !== 'production',\n"\
+"    basename: process.env.PUBLIC_URL || '',\n"\
+"    isBrowser: typeof window !== 'undefined',\n"\
+"  },\n"\
+"  test: {},\n"\
+"  development: {},\n"\
+"  production: {},\n"\
+"}\n\n"\
+"module.exports = merge(config.all, config[config.all.env])\n"
+
+echo -e "$config_index" >> src/config.js
+
+components_index=\
+"const req = require.context('.', true, /\.\/[^/]+\/[^/]+\/index\.js$/)\n\n"\
+"req.keys().forEach((key) => {\n"\
+"  const componentName = key.replace(/^.+\/([^/]+)\/index\.js/, '\$1')\n"\
+"  module.exports[componentName] = req(key).default\n"\
+"})\n"
+
+echo -e "$components_index" >> src/components/index.js
+
+components_app=\
+"import React from 'react';\n"\
+"import { Route, Switch } from 'react-router-dom';\n"\
+"import { HomePage } from 'components';\n\n"\
+"const App = () => (\n"\
+"    <Switch>\n"\
+"        <Route exact path='/' component={HomePage} />\n"\
+"    </Switch>\n"\
+")\n\n"\
+"export default App;\n"
+
+echo -e "$components_app" >> src/components/App.js
+
+home_page=\
+"import React from 'react';\n"\
+"import { Link } from 'react-router-dom';\n\n"\
+"const HomePage = () => (\n"\
+"    <div>\n"\
+"        <h1>Home Page</h1>\n"\
+"    </div>\n"\
+")\n\n"\
+"export default HomePage;\n"
+
+echo -e "$home_page" >> src/components/pages/HomePage/index.js
