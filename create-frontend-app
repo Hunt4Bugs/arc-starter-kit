@@ -6,7 +6,7 @@ cd $1
 
 echo "Installing packages..."
 
-npm install --save react-router react-router-dom
+npm install --save react-router react-router-dom supertokens-auth-react
 npm install -D tailwindcss@npm:@tailwindcss/postcss7-compat postcss@^7 autoprefixer@^9
 npm install @craco/craco react-hot-loader zustand lodash
 
@@ -57,9 +57,24 @@ root_index=\
 "import React from 'react';\n"\
 "import ReactDOM, { render } from 'react-dom'\n"\
 "import 'index.css'\n"\
+"import SuperTokens from \"supertokens-auth-react\";\n"\
+"import EmailPassword from \"supertokens-auth-react/recipe/emailpassword\";\n"\
+"import Session from \"supertokens-auth-react/recipe/session\";\n"\
 "import { BrowserRouter } from 'react-router-dom'\n\n"\
 "import {basename} from 'config'\n"\
 "import App from 'components/App';\n\n"\
+"SuperTokens.init({\n"\
+"    appInfo: {\n"\
+"        // learn more about this on https://supertokens.io/docs/emailpassword/appinfo\n"\
+"        appName: \"test\",\n"\
+"        apiDomain: \"http://localhost:8000\",\n"\
+"        websiteDomain: \"http://localhost:3000\"\n"\
+"    },\n"\
+"    recipeList: [\n"\
+"        EmailPassword.init(),\n"\
+"        Session.init()\n"\
+"    ]\n"\
+"});\n\n"\
 "const renderApp = () => (\n"\
 "    <BrowserRouter basename={basename}>\n"\
 "            <App />\n"\
@@ -105,9 +120,12 @@ echo -e "$components_index" >> src/components/index.js
 components_app=\
 "import React from 'react';\n"\
 "import { Route, Switch } from 'react-router-dom';\n"\
+"import SuperTokens, { getSuperTokensRoutesForReactRouterDom } from \"supertokens-auth-react\";\n"\
 "import { HomePage } from 'components';\n\n"\
 "const App = () => (\n"\
 "    <Switch>\n"\
+"        {/*This renders the login UI on the /auth route*/}\n"\
+"        {getSuperTokensRoutesForReactRouterDom(require(\"react-router-dom\"))}\n"\
 "        <Route exact path='/' component={HomePage} />\n"\
 "    </Switch>\n"\
 ")\n\n"\
